@@ -39,18 +39,18 @@ class AccessTestCase(unittest.TestCase):
                              2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024, 
                              20 * 1024]
 
-    ANSI_FENCEPOSTS    = [_generate_test_string(size) for size in 
-                          SMALL_FENCEPOST_SIZES]
+    ANSI_FENCEPOSTS = [_generate_test_string(size) for size in 
+                       SMALL_FENCEPOST_SIZES]
 
     UNICODE_FENCEPOSTS = [unicode(s) for s in ANSI_FENCEPOSTS]
-    IMAGE_FENCEPOSTS   = ANSI_FENCEPOSTS + [_generate_test_string(size) for 
-                                            size in LARGE_FENCEPOST_SIZES]
+    IMAGE_FENCEPOSTS = ANSI_FENCEPOSTS + [_generate_test_string(size) for 
+                                          size in LARGE_FENCEPOST_SIZES]
 
     def __init__(self, method_name):
         unittest.TestCase.__init__(self, method_name)
 
     def setUp(self):
-        self.cnxn   = pyodbc.connect(CNXNSTRING)
+        self.cnxn = pyodbc.connect(CNXNSTRING)
         self.cursor = self.cnxn.cursor()
 
         for i in range(3):
@@ -115,17 +115,16 @@ class AccessTestCase(unittest.TestCase):
         assert colsize is None or (value is None or colsize >= len(value)), 'colsize=%s value=%s' % (colsize, (value is None) and 'none' or len(value))
 
         if colsize:
-            sql = "create table t1(n1 int not null, s1 %s(%s), s2 %s(%s))" % 
-            (sqltype, colsize, sqltype, colsize)
+            sql = "create table t1(n1 int not null, s1 %s(%s), s2 %s(%s))" % (
+                sqltype, colsize, sqltype, colsize)
         else:
-            sql = "create table t1(n1 int not null, s1 %s, s2 %s)" % 
-            (sqltype, sqltype)
+            sql = "create table t1(n1 int not null, s1 %s, s2 %s)" % (
+                sqltype, sqltype)
 
         if resulttype is None:
             # Access only uses Unicode, but strings might have been passed in 
             # to see if they can be written.  When we
-            # read them back, they'll be unicode, so compare our results to a 
-            # Unicode version of `value`.
+            # read them back, they'll be unicode, so compare our results to a Unicode version of `value`.
             if type(value) is str:
                 resulttype = unicode
             else:
@@ -334,7 +333,7 @@ class AccessTestCase(unittest.TestCase):
         value = -200.5
         self.cursor.execute("create table t1(n real)")
         self.cursor.execute("insert into t1 values (?)", value)
-        result  = self.cursor.execute("select n from t1").fetchone()[0]
+        result = self.cursor.execute("select n from t1").fetchone()[0]
         self.assertEqual(value, result)
 
     def test_float(self):
@@ -348,7 +347,7 @@ class AccessTestCase(unittest.TestCase):
         value = -200.5
         self.cursor.execute("create table t1(n float)")
         self.cursor.execute("insert into t1 values (?)", value)
-        result  = self.cursor.execute("select n from t1").fetchone()[0]
+        result = self.cursor.execute("select n from t1").fetchone()[0]
         self.assertEqual(value, result)
 
     def test_tinyint(self):

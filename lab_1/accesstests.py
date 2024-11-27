@@ -31,12 +31,13 @@ def _generate_test_string(length):
 
 class AccessTestCase(unittest.TestCase):
 
-    SMALL_FENCEPOST_SIZES = [ 0, 1, 254, 255 ] # text fields <= 255
-    LARGE_FENCEPOST_SIZES = [ 256, 270, 304, 508, 510, 511, 512, 1023, 1024, 2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024, 20 * 1024 ]
+    SMALL_FENCEPOST_SIZES = [0, 1, 254, 255]  # text fields <= 255
+    LARGE_FENCEPOST_SIZES = [256, 270, 304, 508, 510, 511, 512, 1023, 1024, 2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024, 20 * 1024]
 
-    ANSI_FENCEPOSTS    = [ _generate_test_string(size) for size in SMALL_FENCEPOST_SIZES ]
-    UNICODE_FENCEPOSTS = [ unicode(s) for s in ANSI_FENCEPOSTS ]
-    IMAGE_FENCEPOSTS   = ANSI_FENCEPOSTS + [ _generate_test_string(size) for size in LARGE_FENCEPOST_SIZES ]
+    ANSI_FENCEPOSTS    = [_generate_test_string(size) for size in SMALL_FENCEPOST_SIZES]
+
+    UNICODE_FENCEPOSTS = [unicode(s) for s in ANSI_FENCEPOSTS]
+    IMAGE_FENCEPOSTS   = ANSI_FENCEPOSTS + [_generate_test_string(size) for size in LARGE_FENCEPOST_SIZES]
 
     def __init__(self, method_name):
         unittest.TestCase.__init__(self, method_name)
@@ -475,10 +476,10 @@ class AccessTestCase(unittest.TestCase):
         self.cursor.execute("create table t1(Abc int, dEf int)")
         self.cursor.execute("select * from t1")
 
-        names = [ t[0] for t in self.cursor.description ]
+        names = [t[0] for t in self.cursor.description]
         names.sort()
 
-        self.assertEquals(names, [ "abc", "def" ])
+        self.assertEquals(names, ["abc", "def"])
 
         # Put it back so other tests don't fail.
         pyodbc.lowercase = False
@@ -499,7 +500,7 @@ class AccessTestCase(unittest.TestCase):
     def test_executemany(self):
         self.cursor.execute("create table t1(a int, b varchar(10))")
 
-        params = [ (i, str(i)) for i in range(1, 6) ]
+        params = [(i, str(i)) for i in range(1, 6)]
 
         self.cursor.executemany("insert into t1(a, b) values (?,?)", params)
 
@@ -521,9 +522,9 @@ class AccessTestCase(unittest.TestCase):
         """
         self.cursor.execute("create table t1(a int, b varchar(10))")
 
-        params = [ (1, 'good'),
+        params = [(1, 'good'),
                    ('error', 'not an int'),
-                   (3, 'good') ]
+                   (3, 'good')]
         
         self.failUnlessRaises(pyodbc.Error, self.cursor.executemany, "insert into t1(a, b) value (?, ?)", params)
 

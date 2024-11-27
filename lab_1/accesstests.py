@@ -13,12 +13,15 @@ _TESTSTR = '0123456789-abcdefghijklmnopqrstuvwxyz-'
 
 def _generate_test_string(length):
     """
-    Returns a string of composed of `seed` to make a string `length` characters long.
+    Returns a string of composed of `seed` to make a string `length` 
+    characters long.
 
-    To enhance performance, there are 3 ways data is read, based on the length of the value, so most data types are
+    To enhance performance, there are 3 ways data is read, based on the length 
+    of the value, so most data types are
     tested with 3 lengths.  This function helps us generate the test data.
 
-    We use a recognizable data set instead of a single character to make it less likely that "overlap" errors will
+    We use a recognizable data set instead of a single character to make it 
+    less likely that "overlap" errors will
     be hidden and to help us manually identify where a break occurs.
     """
     if length <= len(_TESTSTR):
@@ -32,12 +35,16 @@ def _generate_test_string(length):
 class AccessTestCase(unittest.TestCase):
 
     SMALL_FENCEPOST_SIZES = [0, 1, 254, 255]  # text fields <= 255
-    LARGE_FENCEPOST_SIZES = [256, 270, 304, 508, 510, 511, 512, 1023, 1024, 2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024, 20 * 1024]
+    LARGE_FENCEPOST_SIZES = [256, 270, 304, 508, 510, 511, 512, 1023, 1024,
+                             2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024, 
+                             20 * 1024]
 
-    ANSI_FENCEPOSTS    = [_generate_test_string(size) for size in SMALL_FENCEPOST_SIZES]
+    ANSI_FENCEPOSTS    = [_generate_test_string(size) for size in 
+                          SMALL_FENCEPOST_SIZES]
 
     UNICODE_FENCEPOSTS = [unicode(s) for s in ANSI_FENCEPOSTS]
-    IMAGE_FENCEPOSTS   = ANSI_FENCEPOSTS + [_generate_test_string(size) for size in LARGE_FENCEPOST_SIZES]
+    IMAGE_FENCEPOSTS   = ANSI_FENCEPOSTS + [_generate_test_string(size) for 
+                                            size in LARGE_FENCEPOST_SIZES]
 
     def __init__(self, method_name):
         unittest.TestCase.__init__(self, method_name)
@@ -60,7 +67,8 @@ class AccessTestCase(unittest.TestCase):
             self.cursor.close()
             self.cnxn.close()
         except:
-            # If we've already closed the cursor or connection, exceptions are thrown.
+            # If we've already closed the cursor or connection, 
+            # exceptions are thrown.
             pass
 
     def test_multiple_bindings(self):
@@ -107,13 +115,17 @@ class AccessTestCase(unittest.TestCase):
         assert colsize is None or (value is None or colsize >= len(value)), 'colsize=%s value=%s' % (colsize, (value is None) and 'none' or len(value))
 
         if colsize:
-            sql = "create table t1(n1 int not null, s1 %s(%s), s2 %s(%s))" % (sqltype, colsize, sqltype, colsize)
+            sql = "create table t1(n1 int not null, s1 %s(%s), s2 %s(%s))" % 
+            (sqltype, colsize, sqltype, colsize)
         else:
-            sql = "create table t1(n1 int not null, s1 %s, s2 %s)" % (sqltype, sqltype)
+            sql = "create table t1(n1 int not null, s1 %s, s2 %s)" % 
+            (sqltype, sqltype)
 
         if resulttype is None:
-            # Access only uses Unicode, but strings might have been passed in to see if they can be written.  When we
-            # read them back, they'll be unicode, so compare our results to a Unicode version of `value`.
+            # Access only uses Unicode, but strings might have been passed in 
+            # to see if they can be written.  When we
+            # read them back, they'll be unicode, so compare our results to a 
+            # Unicode version of `value`.
             if type(value) is str:
                 resulttype = unicode
             else:
@@ -124,7 +136,8 @@ class AccessTestCase(unittest.TestCase):
         v = self.cursor.execute("select s1, s2 from t1").fetchone()[0]
         
         if type(value) is not resulttype:
-            # To allow buffer --> db --> bytearray tests, always convert the input to the expected result type before
+            # To allow buffer --> db --> bytearray tests, always convert the 
+            # input to the expected result type before
             # comparing.
             value = resulttype(value)
 
@@ -173,7 +186,8 @@ class AccessTestCase(unittest.TestCase):
     # Generate a test for each fencepost size: test_varchar_0, etc.
     def _maketest(value):
         def t(self):
-            self._test_strtype('varbinary', buffer(value), colsize=len(value), resulttype=pyodbc.BINARY)
+            self._test_strtype('varbinary', buffer(value), colsize=len(value), 
+                               resulttype=pyodbc.BINARY)
         t.__doc__ = 'binary %s' % len(value)
         return t
     for value in ANSI_FENCEPOSTS:
@@ -190,7 +204,8 @@ class AccessTestCase(unittest.TestCase):
     # Generate a test for each fencepost size: test_varchar_0, etc.
     def _maketest(value):
         def t(self):
-            self._test_strtype('image', buffer(value), resulttype=pyodbc.BINARY)
+            self._test_strtype('image', buffer(value), 
+                               resulttype=pyodbc.BINARY)
         t.__doc__ = 'image %s' % len(value)
         return t
     for value in IMAGE_FENCEPOSTS:
@@ -241,7 +256,8 @@ class AccessTestCase(unittest.TestCase):
         self.cursor.execute(self.sql)
         
     def test_close_cnxn(self):
-        """Make sure using a Cursor after closing its connection doesn't crash."""
+        """Make sure using a Cursor after closing its 
+        connection doesn't crash."""
 
         self.cursor.execute("create table t1(id integer, s varchar(20))")
         self.cursor.execute("insert into t1 values (?,?)", 1, 'test')
@@ -249,7 +265,8 @@ class AccessTestCase(unittest.TestCase):
 
         self.cnxn.close()
         
-        # Now that the connection is closed, we expect an exception.  (If the code attempts to use
+        # Now that the connection is closed, we expect an exception.  
+        # (If the code attempts to use
         # the HSTMT, we'll get an access violation instead.)
         self.sql = "select * from t1"
         self.assertRaises(pyodbc.ProgrammingError, self._exec)
@@ -393,8 +410,10 @@ class AccessTestCase(unittest.TestCase):
         self.assertEqual(False, result)
 
     def test_guid(self):
-        # REVIEW: Python doesn't (yet) have a UUID type so the value is returned as a string.  Access, however, only
-        # really supports Unicode.  For now, we'll have to live with this difference.  All strings in Python 3.x will
+        # REVIEW: Python doesn't (yet) have a UUID type so the value is 
+        # returned as a string.  Access, however, only
+        # really supports Unicode.  For now, we'll have to live with this 
+        # difference.  All strings in Python 3.x will
         # be Unicode -- pyodbc 3.x will have different defaults.
         value = "de2ac9c6-8676-4b0b-b8a6-217a8580cbee"
         self.cursor.execute("create table t1(g1 uniqueidentifier)")
@@ -419,10 +438,13 @@ class AccessTestCase(unittest.TestCase):
 
     def test_rowcount_nodata(self):
         """
-        This represents a different code path than a delete that deleted something.
+        This represents a different code path than a delete that deleted 
+        something.
 
-        The return value is SQL_NO_DATA and code after it was causing an error.  We could use SQL_NO_DATA to step over
-        the code that errors out and drop down to the same SQLRowCount code.  On the other hand, we could hardcode a
+        The return value is SQL_NO_DATA and code after it was causing an error.  
+        We could use SQL_NO_DATA to step over
+        the code that errors out and drop down to the same SQLRowCount code.  
+        On the other hand, we could hardcode a
         zero return value.
         """
         self.cursor.execute("create table t1(i int)")
@@ -434,8 +456,10 @@ class AccessTestCase(unittest.TestCase):
         """
         Ensure Cursor.rowcount is set properly after a select statement.
 
-        pyodbc calls SQLRowCount after each execute and sets Cursor.rowcount, but SQL Server 2005 returns -1 after a
-        select statement, so we'll test for that behavior.  This is valid behavior according to the DB API
+        pyodbc calls SQLRowCount after each execute and sets Cursor.rowcount, 
+        but SQL Server 2005 returns -1 after a
+        select statement, so we'll test for that behavior.  This is valid 
+        behavior according to the DB API
         specification, but people don't seem to like it.
         """
         self.cursor.execute("create table t1(i int)")
@@ -468,7 +492,8 @@ class AccessTestCase(unittest.TestCase):
     def test_lower_case(self):
         "Ensure pyodbc.lowercase forces returned column names to lowercase."
 
-        # Has to be set before creating the cursor, so we must recreate self.cursor.
+        # Has to be set before creating the cursor, so we must recreate 
+        # self.cursor.
 
         pyodbc.lowercase = True
         self.cursor = self.cnxn.cursor()
@@ -518,7 +543,8 @@ class AccessTestCase(unittest.TestCase):
 
     def test_executemany_failure(self):
         """
-        Ensure that an exception is raised if one query in an executemany fails.
+        Ensure that an exception is raised if one query in an executemany 
+        fails.
         """
         self.cursor.execute("create table t1(a int, b varchar(10))")
 
@@ -526,7 +552,8 @@ class AccessTestCase(unittest.TestCase):
                    ('error', 'not an int'),
                    (3, 'good')]
         
-        self.failUnlessRaises(pyodbc.Error, self.cursor.executemany, "insert into t1(a, b) value (?, ?)", params)
+        self.failUnlessRaises(pyodbc.Error, self.cursor.executemany, 
+                              "insert into t1(a, b) value (?, ?)", params)
 
         
     def test_row_slicing(self):
@@ -566,7 +593,8 @@ class AccessTestCase(unittest.TestCase):
         v3 = u'9876543210' * 25
         value = v2 + 'x' + v3
 
-        self.cursor.execute("create table t1(c2 varchar(250), c3 varchar(250))")
+        self.cursor.execute(
+            "create table t1(c2 varchar(250), c3 varchar(250))")
         self.cursor.execute("insert into t1(c2, c3) values (?,?)", v2, v3)
 
         row = self.cursor.execute("select c2 + 'x' + c3 from t1").fetchone()
@@ -587,8 +615,10 @@ class AccessTestCase(unittest.TestCase):
 def main():
     from optparse import OptionParser
     parser = OptionParser(usage=usage)
-    parser.add_option("-v", "--verbose", action="count", help="Increment test verbosity (can be used multiple times)")
-    parser.add_option("-d", "--debug", action="store_true", default=False, help="Print debugging items")
+    parser.add_option("-v", "--verbose", action="count", 
+                      help="Increment test verbosity")
+    parser.add_option("-d", "--debug", action="store_true", default=False, 
+                      help="Print debugging items")
     parser.add_option("-t", "--test", help="Run only the named test")
 
     (options, args) = parser.parse_args()
@@ -602,7 +632,9 @@ def main():
         driver = 'Microsoft Access Driver (*.mdb)'
 
     global CNXNSTRING
-    CNXNSTRING = 'DRIVER={%s};DBQ=%s;ExtendedAnsiSQL=1' % (driver, abspath(args[0]))
+    CNXNSTRING = (
+        'DRIVER={%s};DBQ=%s;ExtendedAnsiSQL=1' % (driver, abspath(args[0])))
+
 
     cnxn = pyodbc.connect(CNXNSTRING)
     print_library_info(cnxn)
@@ -616,7 +648,8 @@ def main():
 
 if __name__ == '__main__':
 
-    # Add the build directory to the path so we're testing the latest build, not the installed version.
+    # Add the build directory to the path so we're testing the latest build, 
+    # not the installed version.
     add_to_path()
     import pyodbc
     main()

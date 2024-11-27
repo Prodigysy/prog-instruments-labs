@@ -1,42 +1,9 @@
-#!/usr/bin/python
-
-usage="""\
-usage: %prog [options] filename
-
-Unit tests for Microsoft Access
-
-These run using the version from the 'build' directory, not the version
-installed into the Python directories.  You must run python setup.py build
-before running the tests.
-
-To run, pass the filename of an Access database on the command line:
-
-  accesstests test.accdb
-
-An empty Access 2000 database (empty.mdb) and an empty Access 2007 database
-(empty.accdb), are provided.
-
-To run a single test, use the -t option:
-python --version
-  accesstests test.accdb -t unicode_null
-
-If you want to report an error, it would be helpful to include the driver information
-by using the verbose flag and redirecting the output to a file:
-
- accesstests test.accdb -v >& results.txt
-
-You can pass the verbose flag twice for more verbose output:
-
- accesstests test.accdb -vv
-"""
-
-# Access SQL data types: http://msdn2.microsoft.com/en-us/library/bb208866.aspx
-
-import sys, os, re
-import unittest
+from datetime import datetime
 from decimal import Decimal
-from datetime import datetime, date, time
 from os.path import abspath
+
+import unittest
+
 from testutils import *
 
 CNXNSTRING = None

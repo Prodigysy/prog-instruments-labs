@@ -10,6 +10,7 @@ CNXNSTRING = None
 
 _TESTSTR = '0123456789-abcdefghijklmnopqrstuvwxyz-'
 
+
 def _generate_test_string(length):
     """
     Returns a string of composed of `seed` to make a string `length` characters long.

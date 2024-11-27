@@ -553,7 +553,7 @@ class AccessTestCase(unittest.TestCase):
         self.failUnless(result is row)
 
         result = row[:-1]
-        self.assertEqual(result, (1,2,3))
+        self.assertEqual(result, (1, 2, 3))
 
         result = row[0:4]
         self.failUnless(result is row)

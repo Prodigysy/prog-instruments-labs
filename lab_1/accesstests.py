@@ -36,7 +36,7 @@ class AccessTestCase(unittest.TestCase):
 
     SMALL_FENCEPOST_SIZES = [0, 1, 254, 255]  # text fields <= 255
     LARGE_FENCEPOST_SIZES = [256, 270, 304, 508, 510, 511, 512, 1023, 1024,
-                             2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024, 
+                             2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024,
                              20 * 1024]
 
     ANSI_FENCEPOSTS = [_generate_test_string(size) for size in 
@@ -80,7 +80,6 @@ class AccessTestCase(unittest.TestCase):
         for i in range(3):
             self.cursor.execute("select n from t1 where n < ?", 10)
             self.cursor.execute("select n from t1 where n < 3")
-        
 
     def test_different_bindings(self):
         self.cursor.execute("create table t1(n int)")
@@ -112,7 +111,9 @@ class AccessTestCase(unittest.TestCase):
         """
         The implementation for string, Unicode, and binary tests.
         """
-        assert colsize is None or (value is None or colsize >= len(value)), 'colsize=%s value=%s' % (colsize, (value is None) and 'none' or len(value))
+        assert colsize is None or (
+            value is None or colsize >= len(value)), 'colsize=%s value=%s' % (
+                colsize, (value is None) and 'none' or len(value))
 
         if colsize:
             sql = "create table t1(n1 int not null, s1 %s(%s), s2 %s(%s))" % (
@@ -124,7 +125,8 @@ class AccessTestCase(unittest.TestCase):
         if resulttype is None:
             # Access only uses Unicode, but strings might have been passed in 
             # to see if they can be written.  When we
-            # read them back, they'll be unicode, so compare our results to a Unicode version of `value`.
+            # read them back, they'll be unicode, so compare our results to a 
+            # Unicode version of `value`.
             if type(value) is str:
                 resulttype = unicode
             else:
@@ -191,11 +193,6 @@ class AccessTestCase(unittest.TestCase):
         return t
     for value in ANSI_FENCEPOSTS:
         locals()['test_binary_%s' % len(value)] = _maketest(value)
-
-
-    #
-    # image
-    #
 
     def test_null_image(self):
         self._test_strtype('image', None)
@@ -269,7 +266,6 @@ class AccessTestCase(unittest.TestCase):
         # the HSTMT, we'll get an access violation instead.)
         self.sql = "select * from t1"
         self.assertRaises(pyodbc.ProgrammingError, self._exec)
-
 
     def test_unicode_query(self):
         self.cursor.execute(u"select 1")
@@ -421,11 +417,6 @@ class AccessTestCase(unittest.TestCase):
         self.assertEqual(type(v), type(value))
         self.assertEqual(len(v), len(value))
 
-
-    #
-    # rowcount
-    #
-
     def test_rowcount_delete(self):
         self.assertEquals(self.cursor.rowcount, -1)
         self.cursor.execute("create table t1(i int)")
@@ -519,7 +510,6 @@ class AccessTestCase(unittest.TestCase):
 
         row = self.cursor.execute("select * from t1").fetchone()
         self.assertEquals(self.cursor.description, row.cursor_description)
-        
 
     def test_executemany(self):
         self.cursor.execute("create table t1(a int, b varchar(10))")
@@ -539,7 +529,6 @@ class AccessTestCase(unittest.TestCase):
             self.assertEqual(param[0], row[0])
             self.assertEqual(param[1], row[1])
 
-
     def test_executemany_failure(self):
         """
         Ensure that an exception is raised if one query in an executemany 
@@ -553,7 +542,6 @@ class AccessTestCase(unittest.TestCase):
         
         self.failUnlessRaises(pyodbc.Error, self.cursor.executemany, 
                               "insert into t1(a, b) value (?, ?)", params)
-
         
     def test_row_slicing(self):
         self.cursor.execute("create table t1(a int, b int, c int, d int)");
@@ -570,7 +558,6 @@ class AccessTestCase(unittest.TestCase):
         result = row[0:4]
         self.failUnless(result is row)
 
-
     def test_row_repr(self):
         self.cursor.execute("create table t1(a int, b int, c int, d int)");
         self.cursor.execute("insert into t1 values(1,2,3,4)")
@@ -586,7 +573,6 @@ class AccessTestCase(unittest.TestCase):
         result = str(row[:1])
         self.assertEqual(result, "(1,)")
 
-
     def test_concatenation(self):
         v2 = u'0123456789' * 25
         v3 = u'9876543210' * 25
@@ -599,7 +585,6 @@ class AccessTestCase(unittest.TestCase):
         row = self.cursor.execute("select c2 + 'x' + c3 from t1").fetchone()
 
         self.assertEqual(row[0], value)
-
 
     def test_autocommit(self):
         self.assertEqual(self.cnxn.autocommit, False)
@@ -633,7 +618,6 @@ def main():
     global CNXNSTRING
     CNXNSTRING = (
         'DRIVER={%s};DBQ=%s;ExtendedAnsiSQL=1' % (driver, abspath(args[0])))
-
 
     cnxn = pyodbc.connect(CNXNSTRING)
     print_library_info(cnxn)

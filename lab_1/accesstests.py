@@ -4,7 +4,8 @@ from os.path import abspath
 
 import unittest
 
-from testutils import *
+from testutils import add_to_path, print_library_info, load_tests
+
 
 CNXNSTRING = None
 
@@ -33,46 +34,61 @@ def _generate_test_string(length):
 
 
 class AccessTestCase(unittest.TestCase):
+    """
+    Test case class for testing database access using pyodbc.
+    """
 
-    SMALL_FENCEPOST_SIZES = [0, 1, 254, 255]  # text fields <= 255
+    SMALL_FENCEPOST_SIZES = [0, 1, 254, 255]
     LARGE_FENCEPOST_SIZES = [256, 270, 304, 508, 510, 511, 512, 1023, 1024,
-                             2047, 2048, 4000, 4095, 4096, 4097, 10 * 1024,
-                             20 * 1024]
+                             2047, 2048, 4000, 4095, 4096,
+                              4097, 10 * 1024, 20 * 1024]
 
-    ANSI_FENCEPOSTS = [_generate_test_string(size) for size in 
-                       SMALL_FENCEPOST_SIZES]
+    ANSI_FENCEPOSTS = [
+        _generate_test_string(size) for size in SMALL_FENCEPOST_SIZES]
 
-    UNICODE_FENCEPOSTS = [unicode(s) for s in ANSI_FENCEPOSTS]
-    IMAGE_FENCEPOSTS = ANSI_FENCEPOSTS + [_generate_test_string(size) for 
-                                          size in LARGE_FENCEPOST_SIZES]
+    UNICODE_FENCEPOSTS = [str(s) for s in ANSI_FENCEPOSTS]
+    IMAGE_FENCEPOSTS = ANSI_FENCEPOSTS + [
+        _generate_test_string(size) for size in LARGE_FENCEPOST_SIZES]
 
-    def __init__(self, method_name):
-        unittest.TestCase.__init__(self, method_name)
+    def __init__(self, method_name: str) -> None:
+        """
+        Initializes the test case with the given method name.
 
-    def setUp(self):
-        self.cnxn = pyodbc.connect(CNXNSTRING)
-        self.cursor = self.cnxn.cursor()
+        Args:
+            method_name (str): The name of the test method to run.
+        """
+        super().__init__(method_name)
+
+    def setUp(self) -> None:
+        """
+        Set up the database connection and cursor before each test.
+        """
+        self.cnxn: pyodbc.Connection = pyodbc.connect(CNXNSTRING)
+        self.cursor: pyodbc.Cursor = self.cnxn.cursor()
 
         for i in range(3):
             try:
-                self.cursor.execute("drop table t%d" % i)
+                self.cursor.execute(f"drop table t{i}")
                 self.cnxn.commit()
             except:
                 pass
 
         self.cnxn.rollback()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
+        """
+        Close the cursor and connection after each test.
+        """
         try:
             self.cursor.close()
             self.cnxn.close()
         except:
-            # If we've already closed the cursor or connection, 
-            # exceptions are thrown.
             pass
 
-    def test_multiple_bindings(self):
-        "More than one bind and select on a cursor"
+    def test_multiple_bindings(self) -> None:
+        """
+        Test multiple bindings and selects on a single cursor.
+        """
         self.cursor.execute("create table t1(n int)")
         self.cursor.execute("insert into t1 values (?)", 1)
         self.cursor.execute("insert into t1 values (?)", 2)
@@ -81,65 +97,83 @@ class AccessTestCase(unittest.TestCase):
             self.cursor.execute("select n from t1 where n < ?", 10)
             self.cursor.execute("select n from t1 where n < 3")
 
-    def test_different_bindings(self):
+    def test_different_bindings(self) -> None:
+        """
+        Test binding parameters for different tables and data types.
+        """
         self.cursor.execute("create table t1(n int)")
         self.cursor.execute("create table t2(d datetime)")
         self.cursor.execute("insert into t1 values (?)", 1)
         self.cursor.execute("insert into t2 values (?)", datetime.now())
 
-    def test_datasources(self):
-        p = pyodbc.dataSources()
-        self.assert_(isinstance(p, dict))
-
-    def test_getinfo_string(self):
-        value = self.cnxn.getinfo(pyodbc.SQL_CATALOG_NAME_SEPARATOR)
-        self.assert_(isinstance(value, str))
-
-    def test_getinfo_bool(self):
-        value = self.cnxn.getinfo(pyodbc.SQL_ACCESSIBLE_TABLES)
-        self.assert_(isinstance(value, bool))
-
-    def test_getinfo_int(self):
-        value = self.cnxn.getinfo(pyodbc.SQL_DEFAULT_TXN_ISOLATION)
-        self.assert_(isinstance(value, (int, long)))
-
-    def test_getinfo_smallint(self):
-        value = self.cnxn.getinfo(pyodbc.SQL_CONCAT_NULL_BEHAVIOR)
-        self.assert_(isinstance(value, int))
-
-    def _test_strtype(self, sqltype, value, resulttype=None, colsize=None):
+    def test_datasources(self) -> None:
         """
-        The implementation for string, Unicode, and binary tests.
+        Test retrieving available data sources.
         """
-        assert colsize is None or (
-            value is None or colsize >= len(value)), 'colsize=%s value=%s' % (
-                colsize, (value is None) and 'none' or len(value))
+        p: Dict[str, str] = pyodbc.dataSources()
+        self.assertIsInstance(p, dict)
+
+    def test_getinfo_string(self) -> None:
+        """
+        Test retrieving string information using getinfo.
+        """
+        value: str = self.cnxn.getinfo(pyodbc.SQL_CATALOG_NAME_SEPARATOR)
+        self.assertIsInstance(value, str)
+
+    def test_getinfo_bool(self) -> None:
+        """
+        Test retrieving boolean information using getinfo.
+        """
+        value: bool = self.cnxn.getinfo(pyodbc.SQL_ACCESSIBLE_TABLES)
+        self.assertIsInstance(value, bool)
+
+    def test_getinfo_int(self) -> None:
+        """
+        Test retrieving integer information using getinfo.
+        """
+        value: Union[
+            int, int] = self.cnxn.getinfo(
+                pyodbc.SQL_DEFAULT_TXN_ISOLATION)
+        self.assertIsInstance(value, int)
+
+    def test_getinfo_smallint(self) -> None:
+        """
+        Test retrieving small integer information using getinfo.
+        """
+        value: int = self.cnxn.getinfo(pyodbc.SQL_CONCAT_NULL_BEHAVIOR)
+        self.assertIsInstance(value, int)
+
+    def _test_strtype(self, sqltype: str, value: Optional[Any], resulttype: Optional[
+        type] = None, colsize: Optional[int] = None) -> None:
+        """
+        Helper function to test string, Unicode, and binary types.
+
+        Args:
+            sqltype (str): The SQL type to use.
+            value (Optional[Any]): The value to test.
+            resulttype (Optional[type]): The expected result type.
+            colsize (Optional[int]): The column size.
+        """
+        assert colsize is None or (value is None or colsize >= len(
+            value)), f'colsize={colsize} value={(
+                value is None) and "none" or len(value)}'
 
         if colsize:
-            sql = "create table t1(n1 int not null, s1 %s(%s), s2 %s(%s))" % (
-                sqltype, colsize, sqltype, colsize)
+            sql = f"create table t1(n1 int not null, s1 {sqltype}({colsize}), s2 {sqltype}({colsize}))"
         else:
-            sql = "create table t1(n1 int not null, s1 %s, s2 %s)" % (
-                sqltype, sqltype)
+            sql = f"create table t1(n1 int not null, s1 {sqltype}, s2 {sqltype})"
 
         if resulttype is None:
-            # Access only uses Unicode, but strings might have been passed in 
-            # to see if they can be written.  When we
-            # read them back, they'll be unicode, so compare our results to a 
-            # Unicode version of `value`.
-            if type(value) is str:
-                resulttype = unicode
+            if isinstance(value, str):
+                resulttype = str
             else:
                 resulttype = type(value)
 
         self.cursor.execute(sql)
         self.cursor.execute("insert into t1 values(1, ?, ?)", (value, value))
         v = self.cursor.execute("select s1, s2 from t1").fetchone()[0]
-        
+
         if type(value) is not resulttype:
-            # To allow buffer --> db --> bytearray tests, always convert the 
-            # input to the expected result type before
-            # comparing.
             value = resulttype(value)
 
         self.assertEqual(type(v), resulttype)
@@ -149,88 +183,163 @@ class AccessTestCase(unittest.TestCase):
 
         self.assertEqual(v, value)
 
-    #
-    # unicode
-    #
 
-    def test_unicode_null(self):
-        self._test_strtype('varchar', None, colsize=255)
+def test_unicode_null(self) -> None:
+    """
+    Test handling of NULL values for Unicode varchar columns.
+    """
+    self._test_strtype('varchar', None, colsize=255)
 
-    # Generate a test for each fencepost size: test_varchar_0, etc.
-    def _maketest(value):
-        def t(self):
-            self._test_strtype('varchar', value, colsize=len(value))
-        t.__doc__ = 'unicode %s' % len(value)
-        return t
-    for value in UNICODE_FENCEPOSTS:
-        locals()['test_unicode_%s' % len(value)] = _maketest(value)
 
-    #
-    # ansi -> varchar
-    #
+def _maketest(value: str) -> callable:
+    """
+    Factory function for creating Unicode varchar test methods.
 
-    # Access only stores Unicode text but it should accept ASCII text.
+    Args:
+        value (str): The test string to insert into the varchar column.
 
-    # Generate a test for each fencepost size: test_varchar_0, etc.
-    def _maketest(value):
-        def t(self):
-            self._test_strtype('varchar', value, colsize=len(value))
-        t.__doc__ = 'ansi %s' % len(value)
-        return t
-    for value in ANSI_FENCEPOSTS:
-        locals()['test_ansivarchar_%s' % len(value)] = _maketest(value)
+    Returns:
+        callable: A test method for the specified value.
+    """
+    def t(self) -> None:
+        """
+        Test handling of varchar column with the given Unicode string.
+        """
+        self._test_strtype('varchar', value, colsize=len(value))
+    t.__doc__ = f"Unicode varchar with length {len(value)}"
+    return t
 
-    #
-    # binary
-    #
 
-    # Generate a test for each fencepost size: test_varchar_0, etc.
-    def _maketest(value):
-        def t(self):
-            self._test_strtype('varbinary', buffer(value), colsize=len(value), 
-                               resulttype=pyodbc.BINARY)
-        t.__doc__ = 'binary %s' % len(value)
-        return t
-    for value in ANSI_FENCEPOSTS:
-        locals()['test_binary_%s' % len(value)] = _maketest(value)
+for value in UNICODE_FENCEPOSTS:
+    locals()[f'test_unicode_{len(value)}'] = _maketest(value)
 
-    def test_null_image(self):
-        self._test_strtype('image', None)
 
-    # Generate a test for each fencepost size: test_varchar_0, etc.
-    def _maketest(value):
-        def t(self):
-            self._test_strtype('image', buffer(value), 
-                               resulttype=pyodbc.BINARY)
-        t.__doc__ = 'image %s' % len(value)
-        return t
-    for value in IMAGE_FENCEPOSTS:
-        locals()['test_image_%s' % len(value)] = _maketest(value)
+def _maketest(value: str) -> callable:
+    """
+    Factory function for creating ANSI varchar test methods.
 
-    #
-    # memo
-    #
+    Args:
+        value (str): The test string to insert into the ANSI varchar column.
 
-    def test_null_memo(self):
-        self._test_strtype('memo', None)
+    Returns:
+        callable: A test method for the specified value.
+    """
+    def t(self) -> None:
+        """
+        Test handling of varchar column with the given ANSI string.
+        """
+        self._test_strtype('varchar', value, colsize=len(value))
+    t.__doc__ = f"ANSI varchar with length {len(value)}"
+    return t
 
-    # Generate a test for each fencepost size: test_varchar_0, etc.
-    def _maketest(value):
-        def t(self):
-            self._test_strtype('memo', unicode(value))
-        t.__doc__ = 'Unicode to memo %s' % len(value)
-        return t
-    for value in IMAGE_FENCEPOSTS:
-        locals()['test_memo_%s' % len(value)] = _maketest(value)
 
-    # ansi -> memo
-    def _maketest(value):
-        def t(self):
-            self._test_strtype('memo', value)
-        t.__doc__ = 'ANSI to memo %s' % len(value)
-        return t
-    for value in IMAGE_FENCEPOSTS:
-        locals()['test_ansimemo_%s' % len(value)] = _maketest(value)
+for value in ANSI_FENCEPOSTS:
+    locals()[f'test_ansivarchar_{len(value)}'] = _maketest(value)
+
+
+def _maketest(value: bytes) -> callable:
+    """
+    Factory function for creating binary varbinary test methods.
+
+    Args:
+        value (bytes): The test binary data to insert into the varbinary column.
+
+    Returns:
+        callable: A test method for the specified binary data.
+    """
+    def t(self) -> None:
+        """
+        Test handling of varbinary column with the given binary data.
+        """
+        self._test_strtype('varbinary', buffer(value), colsize=len(value), resulttype=pyodbc.BINARY)
+    t.__doc__ = f"Binary varbinary with length {len(value)}"
+    return t
+
+
+for value in ANSI_FENCEPOSTS:
+    locals()[f'test_binary_{len(value)}'] = _maketest(value)
+
+
+def test_null_image(self) -> None:
+    """
+    Test handling of NULL values for image columns.
+    """
+    self._test_strtype('image', None)
+
+
+def _maketest(value: bytes) -> callable:
+    """
+    Factory function for creating image column test methods.
+
+    Args:
+        value (bytes): The test binary data to insert into the image column.
+
+    Returns:
+        callable: A test method for the specified binary data.
+    """
+    def t(self) -> None:
+        """
+        Test handling of image column with the given binary data.
+        """
+        self._test_strtype('image', buffer(value), resulttype=pyodbc.BINARY)
+    t.__doc__ = f"Image column with binary data length {len(value)}"
+    return t
+
+
+for value in IMAGE_FENCEPOSTS:
+    locals()[f'test_image_{len(value)}'] = _maketest(value)
+
+
+def test_null_memo(self) -> None:
+    """
+    Test handling of NULL values for memo columns.
+    """
+    self._test_strtype('memo', None)
+
+
+def _maketest(value: str) -> callable:
+    """
+    Factory function for creating memo column test methods with Unicode input.
+
+    Args:
+        value (str): The test string to insert into the memo column.
+
+    Returns:
+        callable: A test method for the specified Unicode string.
+    """
+    def t(self) -> None:
+        """
+        Test handling of memo column with the given Unicode string.
+        """
+        self._test_strtype('memo', unicode(value))
+    t.__doc__ = f"Unicode memo with length {len(value)}"
+    return t
+
+
+for value in IMAGE_FENCEPOSTS:
+    locals()[f'test_memo_{len(value)}'] = _maketest(value)
+
+
+def _maketest(value: str) -> callable:
+    """
+    Factory function for creating memo column test methods with ANSI input.
+
+    Args:
+        value (str): The test string to insert into the memo column.
+
+    Returns:
+        callable: A test method for the specified ANSI string.
+    """
+    def t(self) -> None:
+        """
+        Test handling of memo column with the given ANSI string.
+        """
+        self._test_strtype('memo', value)
+    t.__doc__ = f"ANSI memo with length {len(value)}"
+    return t
+    
+for value in IMAGE_FENCEPOSTS:
+    locals()[f'test_ansimemo_{len(value)}'] = _maketest(value)
 
     def test_subquery_params(self):
         """Ensure parameter markers work in a subquery"""
@@ -258,166 +367,220 @@ class AccessTestCase(unittest.TestCase):
         self.cursor.execute("create table t1(id integer, s varchar(20))")
         self.cursor.execute("insert into t1 values (?,?)", 1, 'test')
         self.cursor.execute("select * from t1")
-
         self.cnxn.close()
-        
-        # Now that the connection is closed, we expect an exception.  
-        # (If the code attempts to use
-        # the HSTMT, we'll get an access violation instead.)
         self.sql = "select * from t1"
         self.assertRaises(pyodbc.ProgrammingError, self._exec)
 
-    def test_unicode_query(self):
+    def test_unicode_query(self) -> None:
+        """
+        Test executing a query with a Unicode string.
+        """
         self.cursor.execute(u"select 1")
-        
-    def test_negative_row_index(self):
-        self.cursor.execute("create table t1(s varchar(20))")
-        self.cursor.execute("insert into t1 values(?)", "1")
-        row = self.cursor.execute("select * from t1").fetchone()
-        self.assertEquals(row[0], "1")
-        self.assertEquals(row[-1], "1")
 
-    def test_version(self):
-        self.assertEquals(3, len(pyodbc.version.split('.'))) # 1.3.1 etc.
 
-    #
-    # date, time, datetime
-    #
+def test_negative_row_index(self) -> None:
+    """
+    Test accessing rows using negative indexing.
+    """
+    self.cursor.execute("create table t1(s varchar(20))")
+    self.cursor.execute("insert into t1 values(?)", "1")
+    row = self.cursor.execute("select * from t1").fetchone()
+    self.assertEquals(row[0], "1")
+    self.assertEquals(row[-1], "1")
 
-    def test_datetime(self):
-        value = datetime(2007, 1, 15, 3, 4, 5)
 
-        self.cursor.execute("create table t1(dt datetime)")
-        self.cursor.execute("insert into t1 values (?)", value)
+def test_version(self) -> None:
+    """
+    Test that the pyodbc version is in the correct format (X.Y.Z).
+    """
+    self.assertEquals(3, len(pyodbc.version.split('.')))  # Example: 1.3.1
 
-        result = self.cursor.execute("select dt from t1").fetchone()[0]
-        self.assertEquals(value, result)
 
-    #
-    # ints and floats
-    #
+def test_datetime(self) -> None:
+    """
+    Test inserting and retrieving a datetime value.
+    """
+    value = datetime(2007, 1, 15, 3, 4, 5)
+    self.cursor.execute("create table t1(dt datetime)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select dt from t1").fetchone()[0]
+    self.assertEquals(value, result)
 
-    def test_int(self):
-        value = 1234
-        self.cursor.execute("create table t1(n int)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEquals(result, value)
 
-    def test_negative_int(self):
-        value = -1
-        self.cursor.execute("create table t1(n int)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEquals(result, value)
+def test_int(self) -> None:
+    """
+    Test inserting and retrieving an integer value.
+    """
+    value = 1234
+    self.cursor.execute("create table t1(n int)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEquals(result, value)
 
-    def test_smallint(self):
-        value = 32767
-        self.cursor.execute("create table t1(n smallint)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEquals(result, value)
 
-    def test_real(self):
-        value = 1234.5
-        self.cursor.execute("create table t1(n real)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEquals(result, value)
+def test_negative_int(self) -> None:
+    """
+    Test inserting and retrieving a negative integer value.
+    """
+    value = -1
+    self.cursor.execute("create table t1(n int)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEquals(result, value)
 
-    def test_negative_real(self):
-        value = -200.5
-        self.cursor.execute("create table t1(n real)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEqual(value, result)
 
-    def test_float(self):
-        value = 1234.567
-        self.cursor.execute("create table t1(n float)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEquals(result, value)
+def test_smallint(self) -> None:
+    """
+    Test inserting and retrieving a smallint value.
+    """
+    value = 32767
+    self.cursor.execute("create table t1(n smallint)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEquals(result, value)
 
-    def test_negative_float(self):
-        value = -200.5
-        self.cursor.execute("create table t1(n float)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEqual(value, result)
 
-    def test_tinyint(self):
-        self.cursor.execute("create table t1(n tinyint)")
-        value = 10
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEqual(type(result), type(value))
-        self.assertEqual(value, result)
+def test_real(self) -> None:
+    """
+    Test inserting and retrieving a real (float) value.
+    """
+    value = 1234.5
+    self.cursor.execute("create table t1(n real)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEquals(result, value)
 
-    #
-    # decimal & money
-    #
 
-    def test_decimal(self):
-        value = Decimal('12345.6789')
-        self.cursor.execute("create table t1(n numeric(10,4))")
-        self.cursor.execute("insert into t1 values(?)", value)
-        v = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEqual(type(v), Decimal)
-        self.assertEqual(v, value)
+def test_negative_real(self) -> None:
+    """
+    Test inserting and retrieving a negative real (float) value.
+    """
+    value = -200.5
+    self.cursor.execute("create table t1(n real)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEqual(value, result)
 
-    def test_money(self):
-        self.cursor.execute("create table t1(n money)")
-        value = Decimal('1234.45')
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select n from t1").fetchone()[0]
-        self.assertEqual(type(result), type(value))
-        self.assertEqual(value, result)
 
-    def test_negative_decimal_scale(self):
-        value = Decimal('-10.0010')
-        self.cursor.execute("create table t1(d numeric(19,4))")
-        self.cursor.execute("insert into t1 values(?)", value)
-        v = self.cursor.execute("select * from t1").fetchone()[0]
-        self.assertEqual(type(v), Decimal)
-        self.assertEqual(v, value)
+def test_float(self) -> None:
+    """
+    Test inserting and retrieving a float value.
+    """
+    value = 1234.567
+    self.cursor.execute("create table t1(n float)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEquals(result, value)
 
-    #
-    # bit
-    #
 
-    def test_bit(self):
-        self.cursor.execute("create table t1(b bit)")
+def test_negative_float(self) -> None:
+    """
+    Test inserting and retrieving a negative float value.
+    """
+    value = -200.5
+    self.cursor.execute("create table t1(n float)")
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEqual(value, result)
 
-        value = True
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select b from t1").fetchone()[0]
-        self.assertEqual(type(result), bool)
-        self.assertEqual(value, result)
 
-    def test_bit_null(self):
-        self.cursor.execute("create table t1(b bit)")
+def test_tinyint(self) -> None:
+    """
+    Test inserting and retrieving a tinyint value.
+    """
+    self.cursor.execute("create table t1(n tinyint)")
+    value = 10
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEqual(type(result), type(value))
+    self.assertEqual(value, result)
 
-        value = None
-        self.cursor.execute("insert into t1 values (?)", value)
-        result = self.cursor.execute("select b from t1").fetchone()[0]
-        self.assertEqual(type(result), bool)
-        self.assertEqual(False, result)
 
-    def test_guid(self):
-        # REVIEW: Python doesn't (yet) have a UUID type so the value is 
-        # returned as a string.  Access, however, only
-        # really supports Unicode.  For now, we'll have to live with this 
-        # difference.  All strings in Python 3.x will
-        # be Unicode -- pyodbc 3.x will have different defaults.
-        value = "de2ac9c6-8676-4b0b-b8a6-217a8580cbee"
-        self.cursor.execute("create table t1(g1 uniqueidentifier)")
-        self.cursor.execute("insert into t1 values (?)", value)
-        v = self.cursor.execute("select * from t1").fetchone()[0]
-        self.assertEqual(type(v), type(value))
-        self.assertEqual(len(v), len(value))
+def test_decimal(self) -> None:
+    """
+    Test inserting and retrieving a decimal value.
+    """
+    value = Decimal('12345.6789')
+    self.cursor.execute("create table t1(n numeric(10,4))")
+    self.cursor.execute("insert into t1 values(?)", value)
+    v = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEqual(type(v), Decimal)
+    self.assertEqual(v, value)
 
-    def test_rowcount_delete(self):
+
+def test_money(self) -> None:
+    """
+    Test inserting and retrieving a money value.
+    """
+    self.cursor.execute("create table t1(n money)")
+    value = Decimal('1234.45')
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select n from t1").fetchone()[0]
+    self.assertEqual(type(result), type(value))
+    self.assertEqual(value, result)
+
+
+def test_negative_decimal_scale(self) -> None:
+    """
+    Test inserting and retrieving a decimal value with negative scale.
+    """
+    value = Decimal('-10.0010')
+    self.cursor.execute("create table t1(d numeric(19,4))")
+    self.cursor.execute("insert into t1 values(?)", value)
+    v = self.cursor.execute("select * from t1").fetchone()[0]
+    self.assertEqual(type(v), Decimal)
+    self.assertEqual(v, value)
+
+
+def test_bit(self) -> None:
+    """
+    Test inserting and retrieving a bit (boolean) value.
+    """
+    self.cursor.execute("create table t1(b bit)")
+
+    value = True
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select b from t1").fetchone()[0]
+    self.assertEqual(type(result), bool)
+    self.assertEqual(value, result)
+
+
+def test_bit_null(self) -> None:
+    """
+    Test inserting and retrieving a NULL bit (boolean) value.
+    """
+    self.cursor.execute("create table t1(b bit)")
+
+    value = None
+    self.cursor.execute("insert into t1 values (?)", value)
+    result = self.cursor.execute("select b from t1").fetchone()[0]
+    self.assertEqual(type(result), bool)
+    self.assertEqual(False, result)
+
+
+def test_guid(self):
+            """
+    Generates a string of the specified length using `_TESTSTR`.
+
+    Args:
+        length (int): The desired length of the string.
+
+    Returns:
+        str: A generated string of the given length.
+
+    Description:
+        This function is used to create test data. The generated string
+        helps identify overlap-related issues and simplifies finding 
+        breakpoints during testing.
+    """
+            value = "de2ac9c6-8676-4b0b-b8a6-217a8580cbee"
+            self.cursor.execute("create table t1(g1 uniqueidentifier)")
+            self.cursor.execute("insert into t1 values (?)", value)
+            v = self.cursor.execute("select * from t1").fetchone()[0]
+            self.assertEqual(type(v), type(value))
+            self.assertEqual(len(v), len(value))
+
+def test_rowcount_delete(self):
         self.assertEquals(self.cursor.rowcount, -1)
         self.cursor.execute("create table t1(i int)")
         count = 4
@@ -426,7 +589,7 @@ class AccessTestCase(unittest.TestCase):
         self.cursor.execute("delete from t1")
         self.assertEquals(self.cursor.rowcount, count)
 
-    def test_rowcount_nodata(self):
+def test_rowcount_nodata(self):
         """
         This represents a different code path than a delete that deleted 
         something.
@@ -438,11 +601,10 @@ class AccessTestCase(unittest.TestCase):
         zero return value.
         """
         self.cursor.execute("create table t1(i int)")
-        # This is a different code path internally.
         self.cursor.execute("delete from t1")
         self.assertEquals(self.cursor.rowcount, 0)
 
-    def test_rowcount_select(self):
+def test_rowcount_select(self):
         """
         Ensure Cursor.rowcount is set properly after a select statement.
 
@@ -463,7 +625,7 @@ class AccessTestCase(unittest.TestCase):
         self.assertEquals(len(rows), count)
         self.assertEquals(self.cursor.rowcount, -1)
 
-    def test_rowcount_reset(self):
+def test_rowcount_reset(self):
         "Ensure rowcount is reset to -1"
 
         self.cursor.execute("create table t1(i int)")
@@ -475,16 +637,10 @@ class AccessTestCase(unittest.TestCase):
         self.cursor.execute("create table t2(i int)")
         self.assertEquals(self.cursor.rowcount, -1)
 
-    #
-    # Misc
-    #
-
-    def test_lower_case(self):
-        "Ensure pyodbc.lowercase forces returned column names to lowercase."
-
-        # Has to be set before creating the cursor, so we must recreate 
-        # self.cursor.
-
+def test_lower_case(self) -> None:
+        """
+        Ensure that pyodbc.lowercase forces returned column names to lowercase.
+        """
         pyodbc.lowercase = True
         self.cursor = self.cnxn.cursor()
 
@@ -496,12 +652,11 @@ class AccessTestCase(unittest.TestCase):
 
         self.assertEquals(names, ["abc", "def"])
 
-        # Put it back so other tests don't fail.
         pyodbc.lowercase = False
-        
-    def test_row_description(self):
+
+def test_row_description(self) -> None:
         """
-        Ensure Cursor.description is accessible as Row.cursor_description.
+        Ensure that Cursor.description is accessible as Row.cursor_description.
         """
         self.cursor = self.cnxn.cursor()
         self.cursor.execute("create table t1(a int, b char(3))")
@@ -511,7 +666,10 @@ class AccessTestCase(unittest.TestCase):
         row = self.cursor.execute("select * from t1").fetchone()
         self.assertEquals(self.cursor.description, row.cursor_description)
 
-    def test_executemany(self):
+def test_executemany(self) -> None:
+        """
+        Test the executemany method to ensure multiple rows are inserted correctly.
+        """
         self.cursor.execute("create table t1(a int, b varchar(10))")
 
         params = [(i, str(i)) for i in range(1, 6)]
@@ -529,22 +687,26 @@ class AccessTestCase(unittest.TestCase):
             self.assertEqual(param[0], row[0])
             self.assertEqual(param[1], row[1])
 
-    def test_executemany_failure(self):
+def test_executemany_failure(self) -> None:
         """
-        Ensure that an exception is raised if one query in an executemany 
-        fails.
+        Ensure that an exception is raised if one query in an executemany call fails.
         """
         self.cursor.execute("create table t1(a int, b varchar(10))")
 
-        params = [(1, 'good'),
-                   ('error', 'not an int'),
-                   (3, 'good')]
-        
-        self.failUnlessRaises(pyodbc.Error, self.cursor.executemany, 
-                              "insert into t1(a, b) value (?, ?)", params)
-        
-    def test_row_slicing(self):
-        self.cursor.execute("create table t1(a int, b int, c int, d int)");
+        params = [
+            (1, 'good'),
+            ('error', 'not an int'),
+            (3, 'good')
+        ]
+
+        self.failUnlessRaises(pyodbc.Error, self.cursor.executemany,
+                            "insert into t1(a, b) value (?, ?)", params)
+
+def test_row_slicing(self) -> None:
+        """
+        Test slicing operations on row objects.
+        """
+        self.cursor.execute("create table t1(a int, b int, c int, d int)")
         self.cursor.execute("insert into t1 values(1,2,3,4)")
 
         row = self.cursor.execute("select * from t1").fetchone()
@@ -558,8 +720,11 @@ class AccessTestCase(unittest.TestCase):
         result = row[0:4]
         self.failUnless(result is row)
 
-    def test_row_repr(self):
-        self.cursor.execute("create table t1(a int, b int, c int, d int)");
+def test_row_repr(self) -> None:
+        """
+        Test the string representation of row objects.
+        """
+        self.cursor.execute("create table t1(a int, b int, c int, d int)")
         self.cursor.execute("insert into t1 values(1,2,3,4)")
 
         row = self.cursor.execute("select * from t1").fetchone()
@@ -573,20 +738,25 @@ class AccessTestCase(unittest.TestCase):
         result = str(row[:1])
         self.assertEqual(result, "(1,)")
 
-    def test_concatenation(self):
+def test_concatenation(self) -> None:
+        """
+        Test concatenation of string columns with a literal value.
+        """
         v2 = u'0123456789' * 25
         v3 = u'9876543210' * 25
         value = v2 + 'x' + v3
 
-        self.cursor.execute(
-            "create table t1(c2 varchar(250), c3 varchar(250))")
+        self.cursor.execute("create table t1(c2 varchar(250), c3 varchar(250))")
         self.cursor.execute("insert into t1(c2, c3) values (?,?)", v2, v3)
 
         row = self.cursor.execute("select c2 + 'x' + c3 from t1").fetchone()
 
         self.assertEqual(row[0], value)
 
-    def test_autocommit(self):
+def test_autocommit(self) -> None:
+        """
+        Test the autocommit property of connections.
+        """
         self.assertEqual(self.cnxn.autocommit, False)
 
         othercnxn = pyodbc.connect(CNXNSTRING, autocommit=True)
@@ -595,44 +765,42 @@ class AccessTestCase(unittest.TestCase):
         othercnxn.autocommit = False
         self.assertEqual(othercnxn.autocommit, False)
 
+def main() -> None:
+        """
+        Main entry point for running tests.
+        """
+        from optparse import OptionParser
+        parser = OptionParser(usage=usage)
+        parser.add_option("-v", "--verbose", action="count",
+                        help="Increment test verbosity")
+        parser.add_option("-d", "--debug", action="store_true", default=False,
+                        help="Print debugging items")
+        parser.add_option("-t", "--test", help="Run only the named test")
 
-def main():
-    from optparse import OptionParser
-    parser = OptionParser(usage=usage)
-    parser.add_option("-v", "--verbose", action="count", 
-                      help="Increment test verbosity")
-    parser.add_option("-d", "--debug", action="store_true", default=False, 
-                      help="Print debugging items")
-    parser.add_option("-t", "--test", help="Run only the named test")
+        (options, args) = parser.parse_args()
 
-    (options, args) = parser.parse_args()
+        if len(args) != 1:
+            parser.error('dbfile argument required')
 
-    if len(args) != 1:
-        parser.error('dbfile argument required')
+        if args[0].endswith('.accdb'):
+            driver = 'Microsoft Access Driver (*.mdb, *.accdb)'
+        else:
+            driver = 'Microsoft Access Driver (*.mdb)'
 
-    if args[0].endswith('.accdb'):
-        driver = 'Microsoft Access Driver (*.mdb, *.accdb)'
-    else:
-        driver = 'Microsoft Access Driver (*.mdb)'
+        global CNXNSTRING
+        CNXNSTRING = (
+            'DRIVER={%s};DBQ=%s;ExtendedAnsiSQL=1' % (driver, abspath(args[0])))
 
-    global CNXNSTRING
-    CNXNSTRING = (
-        'DRIVER={%s};DBQ=%s;ExtendedAnsiSQL=1' % (driver, abspath(args[0])))
+        cnxn = pyodbc.connect(CNXNSTRING)
+        print_library_info(cnxn)
+        cnxn.close()
 
-    cnxn = pyodbc.connect(CNXNSTRING)
-    print_library_info(cnxn)
-    cnxn.close()
+        suite = load_tests(AccessTestCase, options.test)
 
-    suite = load_tests(AccessTestCase, options.test)
+        testRunner = unittest.TextTestRunner(verbosity=options.verbose)
+        result = testRunner.run(suite)
 
-    testRunner = unittest.TextTestRunner(verbosity=options.verbose)
-    result = testRunner.run(suite)
-
-
-if __name__ == '__main__':
-
-    # Add the build directory to the path so we're testing the latest build, 
-    # not the installed version.
-    add_to_path()
-    import pyodbc
-    main()
+    if __name__ == '__main__':
+        add_to_path()
+        import pyodbc
+        main()

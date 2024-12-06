@@ -14,16 +14,18 @@ _TESTSTR = '0123456789-abcdefghijklmnopqrstuvwxyz-'
 
 def _generate_test_string(length):
     """
-    Returns a string of composed of `seed` to make a string `length` 
-    characters long.
+    Generate a test string of the specified length.
 
-    To enhance performance, there are 3 ways data is read, based on the length 
-    of the value, so most data types are
-    tested with 3 lengths.  This function helps us generate the test data.
+    If the requested length is less than or equal to the length of `_TESTSTR`, 
+    a substring of `_TESTSTR` is returned. Otherwise, `_TESTSTR` is repeated 
+    as many times as necessary to meet or exceed the desired length, 
+    and the result is trimmed to the exact length.
 
-    We use a recognizable data set instead of a single character to make it 
-    less likely that "overlap" errors will
-    be hidden and to help us manually identify where a break occurs.
+    Args:
+        length (int): The desired length of the output string.
+
+    Returns:
+        str: A string of the specified length composed of repeated `_TESTSTR` content.
     """
     if length <= len(_TESTSTR):
         return _TESTSTR[:length]

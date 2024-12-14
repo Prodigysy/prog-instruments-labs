@@ -1,7 +1,5 @@
 import asyncio
-import aiohttp
 import random
-import os
 import time
 
 from aiofiles import open as aio_open
@@ -18,9 +16,10 @@ async def download_file(file_url: str, file_name: str) -> str:
     print(f"Загрузка файла с {file_url} начинается...")
     delay = random.uniform(2, 5)  # Задержка от 2 до 5 секунд
     await asyncio.sleep(delay)  # Эмуляция загрузки
-    # Запись "загруженных данных" в файл
     async with aio_open(file_name, mode='w') as f:
-        await f.write(f"Загруженные данные с {file_url}. Задержка: {delay:.2f} секунд.\n")
+        await f.write(
+            f"Загруженные данные с {file_url}. "
+            f"Задержка: {delay:.2f} секунд.\n")
     print(f"Файл {file_name} загружен за {delay:.2f} секунд.")
     return file_name
 
@@ -55,41 +54,44 @@ async def analyze_data(file_name: str) -> str:
 
 async def main() -> None:
     """
-    Главная асинхронная функция для выполнения всех задач: загрузки файлов, запросов к API и анализа данных.
+    Главная асинхронная функция для выполнения всех задач: загрузки файлов,
+    запросов к API и анализа данных.
     """
-    start_time = time.time()  # Засекаем время выполнения
+    start_time = time.time()
 
     # Список URL для загрузки файлов и API для запросов
-    file_urls = ['https://example.com/file1', 'https://example.com/file2', 'https://example.com/file3']
-    api_urls = ['https://api.example.com/data1', 'https://api.example.com/data2', 'https://api.example.com/data3']
+    file_urls = [
+        'https://example.com/file1',
+        'https://example.com/file2',
+        'https://example.com/file3'
+    ]
 
-    # Создание задач для загрузки файлов
+    api_urls = [
+        'https://api.example.com/data1',
+        'https://api.example.com/data2',
+        'https://api.example.com/data3'
+    ]
+
     file_download_tasks = [
         download_file(file_urls[i], f'file_{i+1}.txt') for i in range(3)
     ]
-    # Создание задач для запросов к API
     api_fetch_tasks = [
         fetch_data_from_api(api_urls[i]) for i in range(3)
     ]
-    # Создание задач для анализа данных
     file_analysis_tasks = [
         analyze_data(f'file_{i+1}.txt') for i in range(3)
     ]
 
-    # Собираем все задачи в один список
     all_tasks = file_download_tasks + api_fetch_tasks + file_analysis_tasks
 
-    # Ожидаем выполнения всех задач
     completed_tasks = await asyncio.gather(*all_tasks)
 
-    # Выводим результаты выполнения
     print("\nВсе задачи завершены:")
     for result in completed_tasks:
         print(result)
 
-    end_time = time.time()  # Засекаем время окончания выполнения
+    end_time = time.time()
     print(f"\nВремя выполнения: {end_time - start_time:.2f} секунд.")
 
-# Запуск асинхронного приложения
 if __name__ == "__main__":
     asyncio.run(main())

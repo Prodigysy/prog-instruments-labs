@@ -3,9 +3,48 @@ from typing import List, Optional
 
 
 class Task:
-    def __init__(self, title: str, description: str = '', due_date: Optional[
-            str] = None, priority: str
-              = 'Low', status: str = 'Pending') -> None:
+    """
+    A class representing a task.
+
+    Attributes:
+        title (str): The title of the task.
+        description (str): A description of the task.
+        due_date (Optional[datetime]): The due date of the task. Can be None
+        if not provided.
+        priority (str): The priority of the task (e.g., 'Low', 'Medium',
+        'High').
+        status (str): The current status of the task (e.g., 'Pending',
+        'Completed').
+        created_at (datetime): The date and time when the task was created.
+    """
+
+    def __init__(self, title: str, description: str = '',
+                 due_date: Optional[str] = None, priority: str = 'Low',
+                 status: str = 'Pending') -> None:
+
+        """
+        Initializes a new task instance.
+
+        Args:
+            title (str): The title of the task.
+            description (str, optional): The description of the task.
+            Defaults to an empty string.
+            due_date (Optional[str], optional):
+            The due date of the task in ISO format (YYYY-MM-DD).
+                                                 Defaults to None.
+            priority (str, optional): The priority of the task.
+            Defaults to 'Low'.
+            status (str, optional): The status of the task.
+            Defaults to 'Pending'.
+        Attributes:
+            title (str): The title of the task.
+            description (str): The description of the task.
+            due_date (Optional[datetime]): The due date of the task as a
+            datetime object.
+            priority (str): The priority of the task.
+            status (str): The current status of the task.
+            created_at (datetime): The time when the task was created.
+        """
         self.title = title
         self.description = description
         if isinstance(due_date, str):
@@ -16,7 +55,8 @@ class Task:
         elif isinstance(due_date, datetime):
             self.due_date = due_date
         else:
-            self.due_date = None  # Если дата не передана или некорректна
+            self.due_date = None
+
         self.priority = priority
         self.status = status
         self.created_at = datetime.now()

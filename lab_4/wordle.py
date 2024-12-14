@@ -9,7 +9,7 @@ try:
     from termcolor import colored
     COLOR = True
 except ImportError:
-    def colored(text, *args, **kwargs):
+    def colored(text):
         return text  # Fallback for missing termcolor module
     COLOR = False
 
@@ -22,13 +22,6 @@ logging.basicConfig(level=logging.INFO,
 
 global ABSPATH
 ABSPATH = abspath(".")
-
-
-def _count_gen(reader):
-    b = reader(1 << 20)  # 1 MB at a time
-    while b:
-        yield b
-        b = reader(1 << 20)
 
 
 def random_line(stream) -> str:

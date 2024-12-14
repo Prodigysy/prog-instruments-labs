@@ -1,37 +1,48 @@
-#./bin/python3
-from typing import Tuple, List, Union
+import logging
+
+from typing import Tuple, List
 from os.path import abspath, join
 from random import randint
 from collections import Counter
-try: # Module not installed for everyone
+
+try:
     from termcolor import colored
     COLOR = True
-except:
-    global colored
-    def colored(x, *_, **__):
-        return x
+except ImportError:
+    def colored(text, *args, **kwargs):
+        return text  # Fallback for missing termcolor module
     COLOR = False
 
-# Words from https://people.sc.fsu.edu/~jburkardt/datasets/words
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[logging.FileHandler('game_log.log'),
+                              logging.StreamHandler()])
 
 global ABSPATH
 ABSPATH = abspath(".")
+
+
 def _count_gen(reader):
-    b = reader(1 << 20) # 1 MB at a time
+    b = reader(1 << 20)  # 1 MB at a time
     while b:
         yield b
         b = reader(1 << 20)
 
+
 def random_line(stream) -> str:
-    # https://stackoverflow.com/questions/3540288/how-do-i-read-a-random-line-from-one-file#3540315
-    line = next(stream)
-    for index, _line in enumerate(stream, 2):
-        if not randint(0, stream):
-            line = _line
-    return str(line)
+    # Получаем все строки в списке
+    lines = stream.readlines()
+    # Генерируем случайный индекс
+    random_index = randint(0, len(lines) - 1)
+    return lines[random_index].strip()
+# Возвращаем выбранную строку, удаляя лишние пробелы и символы новой строки
+
 
 class Wordle_Game:
     '''Game class implementing wordle, no word validation'''
+
     def __init__(self, wordspath) -> None:
         with open(wordspath, 'rb') as wordslist:
             self._word = random_line(wordslist)[2:-2].upper()
@@ -39,29 +50,32 @@ class Wordle_Game:
         self.attempts = 0
         self._counter = Counter(self._word)
         self.won = False
+        logging.info("Game initialized with word: %s", self._word)
+        # Логируем инициализацию игры
 
     def __len__(self) -> int:
         '''returns how many attempts the player has made'''
-        # len(Game) --> attempts
         return self.attempts
 
     def _validate(self, word):
-        ''' Do not use. Internal function'''
-        bull, cow = 0, self._counter & Counter(word) # Counter intersection, letters match but wrong place
-        res = [None] * len(word) # Preallocate to save memory and increase speed
+        '''Do not use. Internal function'''
+        bull, cow = 0, self._counter & Counter(word)
+        # Counter intersection, letters match but wrong place
+        res = [None] * len(word)
         cows = [None] * len(word)
+
         # First pass matches the letters together
-        for idx, (x,y) in enumerate(zip(self._word, word)):
-            if x==y: # Bull
+        for idx, (x, y) in enumerate(zip(self._word, word)):
+            if x == y:  # Bull
                 cow[x] -= 1
                 bull += 1
                 res[idx] = colored(x, 'green', attrs=['reverse'])
 
-        # Second pass makes sure that wrong place letters processed
+        # Second pass processes wrong place letters
         for idx, x in enumerate(word):
-            if res[idx] == None:
+            if res[idx] is None:
                 if cow[x] > 0:
-                    cow[x] -= 1 # Subtract one to not have duplicates
+                    cow[x] -= 1  # Subtract one to avoid duplicates
                     if COLOR:
                         res[idx] = colored(x, 'yellow')
                     else:
@@ -70,21 +84,20 @@ class Wordle_Game:
                     res[idx] = '*'
         return res, cows, bull, len(cow)
 
-    def guess(self, word:str) -> Tuple[List[str], List[str], Int, Int]:
-        '''Outside interface for guesses:
-        Returns:
-            bulls: Array of characters with correct letters in place
-            cows : Array of characters with letters in incorrect places
-            bull : count of correct characters
-            cow  : count of characters in wrong place'''
+    def guess(self, word: str) -> Tuple[List[str], List[str], int, int]:
+        '''Outside interface for guesses'''
         if self.won:
-            # Already won, no point
             return
         word, cows, bull, cow = self._validate(word)
         self.attempts += 1
+        logging.info("Attempt #%d: Player guessed %s", self.attempts, word)
+        # Логируем попытку игрока
         if bull == self.length:
             self.won = True
+            logging.info("Player won! Word is: %s", self._word)
+            # Логируем победу
         return word, cows, bull, cow
+
 
 def wordle_player(words="passwords.txt") -> bool:
     '''Simple human interface for game'''
@@ -93,25 +106,33 @@ def wordle_player(words="passwords.txt") -> bool:
         while True:
             # Main game loop
             game = Wordle_Game(wordspath)
-            # Guess length
-            print("WORD:\n[", "*" * game.length, "]") 
+            logging.info("Starting a new game.")  # Логируем начало игры
+            print("WORD:\n[", "*" * game.length, "]")
             while not game.won:
                 inp = input("> ").upper()
                 if len(inp) != game.length:
-                    print("  ERR: WRONG LENGTH") # Undefined case if shorter than word
+                    print("  ERR: WRONG LENGTH")
+                    logging.warning(
+                        "Invalid input length: %s (expected %d)", inp,
+                        game.length)
+                    # Логируем ошибку длины
                     continue
                 word, cow, bullcount, cowcount = game.guess(inp)
                 print(f"\r> {''.join(word)} : {len(game)}")
-                if not COLOR and c != 0:
-                    # Gives generic hints as to letter composition
+                if not COLOR and cowcount != 0:
                     print(f"> {''.join(cow)} Misplaced")
             else:
+                logging.info("Victory! Word was: %s", game._word)
+                # Логируем победу
                 print("  Victory! ")
                 return True
     except EOFError or KeyboardInterrupt:
-        # Exit conditions, otherwise throw an exception
+        logging.info("Game exited. Word was: %s", game._word)  # Логируем выход
         print(f"> Word was:\n> {game._word}")
     return False
 
+
 if __name__ == "__main__":
+    logging.info("Starting Wordle game.")
     wordle_player()
+    logging.info("Game ended.")

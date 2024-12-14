@@ -3,57 +3,39 @@ from typing import List, Optional
 
 
 class Task:
-    """
-    Класс для представления задачи.
-
-    Атрибуты:
-        title (str): Заголовок задачи.
-        description (str): Описание задачи.
-        due_date (Optional[datetime]): Дата выполнения задачи.
-        priority (str): Приоритет задачи (например, "Low", "Medium", "High").
-        status (str): Статус задачи (например, "Pending", "Completed").
-        created_at (datetime): Время создания задачи.
-    """
-
-    def __init__(
-            self,
-            title: str,
-            description: str = '',
-            due_date: Optional[datetime] = None,
-            priority: str = 'Low',
-            status: str = 'Pending') -> None:
-        """
-        Инициализирует новую задачу.
-
-        Аргументы:
-            title (str): Заголовок задачи.
-            description (str): Описание задачи.
-            due_date (Optional[datetime]): Дата выполнения задачи.
-            priority (str): Приоритет задачи.
-            status (str): Статус задачи.
-        """
+    def __init__(self, title: str, description: str = '', due_date: Optional[
+            str] = None, priority: str
+              = 'Low', status: str = 'Pending') -> None:
         self.title = title
         self.description = description
-        self.due_date = due_date if isinstance(due_date, datetime) else None
+        if isinstance(due_date, str):
+            try:
+                self.due_date = datetime.fromisoformat(due_date)
+            except ValueError:
+                self.due_date = None
+        elif isinstance(due_date, datetime):
+            self.due_date = due_date
+        else:
+            self.due_date = None  # Если дата не передана или некорректна
         self.priority = priority
         self.status = status
         self.created_at = datetime.now()
 
     def __str__(self) -> str:
-        """Возвращает строковое представление задачи."""
+        """Returns a string representation of the task."""
         return f"{self.title} ({self.status})"
 
     def mark_completed(self) -> None:
-        """Помечает задачу как выполненную."""
+        """Marks the task as completed."""
         self.status = 'Completed'
 
     def update(self, **kwargs: str) -> None:
         """
-        Обновляет атрибуты задачи с помощью переданных аргументов.
+        Updates task attributes using the provided arguments.
 
-        Аргументы:
-            **kwargs: Ключи могут быть 'title', 'description', 'due_date',
-             'priority', 'status'.
+        Arguments:
+            **kwargs: Keys may include 'title', 'description', 'due_date',
+                      'priority', 'status'.
         """
         valid_fields = [
             'title', 'description', 'due_date', 'priority', 'status']
@@ -61,82 +43,81 @@ class Task:
         for key, value in kwargs.items():
             if key in valid_fields:
                 if key == 'due_date' and not isinstance(value, datetime):
-                    continue  # Игнорировать неправильный формат даты
+                    continue  # Ignore incorrect date format
                 setattr(self, key, value)
 
 
 class TaskManager:
     """
-    Класс для управления задачами.
+    A class to manage tasks.
 
-    Атрибуты:
-        tasks (List[Task]): Список задач.
+    Attributes:
+        tasks (List[Task]): A list of tasks.
     """
 
     def __init__(self) -> None:
-        """Инициализирует менеджер задач с пустым списком задач."""
+        """Initializes the task manager with an empty task list."""
         self.tasks: List[Task] = []
 
     def add_task(self, task: Task) -> None:
         """
-        Добавляет новую задачу в список.
+        Adds a new task to the list.
 
-        Аргументы:
-            task (Task): Экземпляр задачи для добавления.
-        Исключения:
-            ValueError: Если переданный объект не является экземпляром
-            класса Task.
+        Arguments:
+            task (Task): The task instance to add.
+        Exceptions:
+            ValueError: If the provided object is not an instance of Task.
         """
         if isinstance(task, Task):
             self.tasks.append(task)
         else:
-            raise ValueError("Задача должна быть экземпляром класса Task.")
+            raise ValueError("Task must be an instance of the Task class.")
 
     def remove_task(self, task: Task) -> None:
         """
-        Удаляет задачу из списка.
+        Removes a task from the list.
 
-        Аргументы:
-            task (Task): Экземпляр задачи для удаления.
-        Выводит сообщение, если задача не найдена.
+        Arguments:
+            task (Task): The task instance to remove.
+        Prints a message if the task is not found.
         """
         if task in self.tasks:
             self.tasks.remove(task)
         else:
-            print("Задача не найдена.")
+            print("Task not found.")
 
     def get_tasks(self) -> List[Task]:
-        """Возвращает все задачи."""
+        """Returns all tasks."""
         return self.tasks
 
     def get_task_by_status(self, status: str) -> List[Task]:
         """
-        Фильтрует задачи по статусу.
+        Filters tasks by status.
 
-        Аргументы:
-            status (str): Статус задачи для фильтрации.
-        Возвращает:
-            List[Task]: Список задач с указанным статусом.
+        Arguments:
+            status (str): The status of tasks to filter by.
+        Returns:
+            List[Task]: A list of tasks with the specified status.
         """
         return [task for task in self.tasks if task.status == status]
 
     def get_task_by_priority(self, priority: str) -> List[Task]:
         """
-        Фильтрует задачи по приоритету.
+        Filters tasks by priority.
 
-        Аргументы:
-            priority (str): Приоритет задачи для фильтрации.
-        Возвращает:
-            List[Task]: Список задач с указанным приоритетом.
+        Arguments:
+            priority (str): The priority of tasks to filter by.
+        Returns:
+            List[Task]: A list of tasks with the specified priority.
         """
         return [task for task in self.tasks if task.priority == priority]
 
     def sort_tasks_by_due_date(self) -> List[Task]:
         """
-        Сортирует задачи по дате выполнения (по возрастанию).
+        Sorts tasks by due date (ascending).
 
-        Возвращает:
-            List[Task]: Список отсортированных задач.
+        Returns:
+            List[Task]: A list of sorted tasks.
         """
         return sorted(
             self.tasks,
@@ -144,11 +125,11 @@ class TaskManager:
 
     def group_tasks_by_priority(self) -> dict:
         """
-        Группирует задачи по приоритету.
+        Groups tasks by priority.
 
-        Возвращает:
-            dict: Словарь с приоритетами как ключами
-            и списками задач как значениями.
+        Returns:
+            dict: A dictionary with priorities as keys and lists of
+            tasks as values.
         """
         grouped = {}
         for task in self.tasks:
@@ -161,13 +142,14 @@ class TaskManager:
             self,
             start_date: datetime, end_date: datetime) -> List[Task]:
         """
-        Фильтрует задачи по диапазону дат.
+        Filters tasks by a date range.
 
-        Аргументы:
-            start_date (datetime): Начальная дата диапазона.
-            end_date (datetime): Конечная дата диапазона.
-        Возвращает:
-            List[Task]: Список задач, попадающих в указанный диапазон дат.
+        Arguments:
+            start_date (datetime): The start date of the range.
+            end_date (datetime): The end date of the range.
+        Returns:
+            List[Task]: A list of tasks that fall within
+            the specified date range.
         """
         return [
             task for task in self.tasks

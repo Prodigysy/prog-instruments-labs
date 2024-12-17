@@ -1,0 +1,8 @@
+2024-12-17 14:10:32,014 - INFO - Starting Wordle game.
+2024-12-17 14:10:34,114 - INFO - Game initialized with word: TEST
+2024-12-17 14:10:36,213 - INFO - Starting a new game.
+2024-12-17 14:10:40,501 - INFO - Attempt #1: Player guessed TENS
+2024-12-17 14:10:45,603 - INFO - Attempt #2: Player guessed BEST
+2024-12-17 14:10:50,123 - INFO - Player won! Word is: TEST
+2024-12-17 14:10:53,875 - INFO - Victory! Word was: TEST
+2024-12-17 14:10:57,234 - INFO - Game ended.
